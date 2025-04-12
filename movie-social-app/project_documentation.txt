@@ -1,0 +1,179 @@
+Movie Social App Documentation
+============================
+
+1. Project Overview
+------------------
+A modern web application for movie enthusiasts to discover, watch, and discuss movies. The app integrates with the TMDB API to provide comprehensive movie information and features.
+
+2. Core Features
+---------------
+2.1 Home Page
+- Trending movies carousel with auto/manual navigation
+- Featured movies section
+- Recent reviews section
+- Popular movies grid
+- Advanced search functionality with:
+  * Real-time search results
+  * Debounced API calls (300ms)
+  * Keyboard navigation (↑/↓ arrows, Enter, Escape)
+  * View All Results option
+  * Loading states and error handling
+
+2.2 Posts & Communities
+- Sidebar navigation with categories:
+  * All Posts
+  * My Posts
+  * Liked Posts
+  * Saved Posts
+  * Communities
+- Post features:
+  * Create new posts
+  * Like and save posts
+  * Comment on posts
+  * Share, forward, and repost functionality
+  * Post filtering and search
+- Community features:
+  * Community discovery
+  * Join/leave communities
+  * Community-specific posts
+  * Community rules and guidelines
+  * Member management
+
+2.3 Movie Details Page
+- Comprehensive movie information
+- Cast section with top 10 actors
+- Similar movies recommendations
+- Movie reviews from TMDB
+- Watch trailer functionality
+- Add to watchlist feature
+- Social sharing options
+- Tabbed interface:
+  * Overview
+  * Cast
+  * Similar Movies
+  * Reviews
+  * Recommendations
+
+3. Technical Implementation
+--------------------------
+3.1 Frontend
+- React.js with functional components
+- React Router for navigation
+- Tailwind CSS for styling
+- Responsive design
+- State management with React Hooks
+- API integration with TMDB
+
+3.2 Component Structure
+- Posts Components:
+  * PostsPage (main container)
+  * PostsSidebar (navigation)
+  * PostCard (individual posts)
+  * CreatePost (post creation)
+  * Communities (community listing)
+  * CommunityPage (individual community)
+  * NotificationsPanel (user notifications)
+
+3.3 Performance Optimizations
+- Debounced search (300ms)
+- Lazy loading of images
+- Efficient state management
+- Optimized API calls
+- Proper error handling
+
+4. User Experience
+-----------------
+4.1 Navigation
+- Intuitive sidebar navigation
+- Breadcrumb navigation
+- Back to top button
+- Smooth transitions
+- Loading states
+
+4.2 Post Interaction
+- Real-time post updates
+- Interactive post actions
+- Comment system
+- Share functionality
+- Community engagement
+
+4.3 Community Features
+- Community discovery
+- Member management
+- Content moderation
+- Community guidelines
+- Post filtering
+
+5. Future Enhancements
+---------------------
+5.1 Planned Features
+- User authentication
+- Watchlist functionality
+- Watch party implementation
+- User reviews and ratings
+- Personalized recommendations
+
+5.2 Technical Improvements
+- Backend implementation
+- Database integration
+- Real-time features
+- Performance optimizations
+- Enhanced error handling
+
+6. Development Guidelines
+------------------------
+6.1 Code Structure
+- Component-based architecture
+- Modular design
+- Reusable components
+- Clean code practices
+
+6.2 Styling Guidelines
+- Tailwind CSS utility classes
+- Consistent color scheme
+- Responsive design patterns
+- Accessibility considerations
+
+7. API Documentation
+-------------------
+7.1 TMDB API Integration
+- API Key: abd78fc15c359fdb67ec78ef39db3ae4
+- Base URL: https://api.themoviedb.org/3
+- Image Base URL: https://image.tmdb.org/t/p/w500
+
+7.2 Available Endpoints
+- Movie Details: /movie/{movie_id}
+- Search: /search/movie
+- Trending: /trending/movie/week
+- Credits: /movie/{movie_id}/credits
+- Similar: /movie/{movie_id}/similar
+- Reviews: /movie/{movie_id}/reviews
+- Recommendations: /movie/{movie_id}/recommendations
+
+8. Deployment
+------------
+8.1 Requirements
+- Node.js
+- npm/yarn
+- Modern web browser
+
+8.2 Setup
+1. Clone the repository
+2. Install dependencies: npm install
+3. Start development server: npm start
+4. Build for production: npm run build
+
+9. Contributing
+--------------
+- Follow coding standards
+- Write clean, documented code
+- Test thoroughly
+- Submit pull requests
+- Maintain code quality
+
+10. Support
+----------
+For issues and feature requests:
+- GitHub Issues
+- Documentation updates
+- Community contributions 

@@ -1,0 +1,292 @@
+# Movie Social App Documentation
+
+## Project Overview
+A full-stack web application for movie enthusiasts to share reviews, discover new films, and connect with other movie lovers. Built with React, Node.js, Express, and MongoDB.
+
+## Project Structure
+```
+movie-social-app/
+├── client/                 # Frontend React application
+│   ├── public/            # Static assets
+│   └── src/               # React source code
+│       ├── components/    # Reusable UI components
+│       ├── pages/         # Page components
+│       ├── context/       # React context providers
+│       ├── hooks/         # Custom React hooks
+│       ├── utils/         # Utility functions
+│       └── App.jsx        # Main application component
+└── server/                # Backend Node.js/Express application
+    ├── controllers/       # Route controllers
+    ├── models/            # MongoDB models
+    ├── routes/            # API routes
+    ├── middleware/        # Custom middleware
+    └── server.js          # Server entry point
+```
+
+## Key Components
+
+### Frontend Components
+
+1. **LandingPage.jsx**
+   - Main landing page with hero section
+   - Features:
+     - Gradient background
+     - Decorative movie images
+     - Call-to-action buttons
+     - Responsive design
+   - Styling:
+     - Uses Tailwind CSS
+     - Custom animations
+     - Responsive breakpoints
+
+2. **LandingNavbar.jsx**
+   - Navigation bar for landing page
+   - Features:
+     - Sticky positioning
+     - Rounded corners
+     - Responsive design
+   - Styling:
+     - Semi-transparent background
+     - Shadow effects
+     - Smooth transitions
+
+3. **AuthContext.jsx**
+   - Authentication context provider
+   - Manages user authentication state
+   - Handles login/logout functionality
+   - Provides user data to components
+
+### Backend Components
+
+1. **User Model**
+   - MongoDB schema for users
+   - Fields:
+     - username
+     - email
+     - password (hashed)
+     - profile information
+     - movie preferences
+
+2. **Movie Model**
+   - MongoDB schema for movies
+   - Fields:
+     - title
+     - description
+     - release date
+     - genre
+     - ratings
+     - reviews
+
+3. **API Routes**
+   - Authentication routes
+   - Movie routes
+   - User profile routes
+   - Review routes
+
+## Styling Implementation
+
+### CSS Framework
+- Tailwind CSS for utility-first styling
+- Custom CSS for specific animations and effects
+
+### Key Styling Patterns
+1. **Responsive Design**
+   - Mobile-first approach
+   - Breakpoints:
+     - sm: 640px
+     - md: 768px
+     - lg: 1024px
+     - xl: 1280px
+
+2. **Layout Components**
+   - Container components with max-width constraints
+   - Flexbox and Grid for layouts
+   - Responsive spacing utilities
+
+3. **Visual Effects**
+   - Gradient backgrounds
+   - Shadow effects
+   - Hover animations
+   - Transition effects
+
+## State Management
+
+### Frontend State
+- React Context for global state
+- Local state for component-specific data
+- Form state management
+
+### Backend State
+- MongoDB for persistent data
+- Session management
+- Authentication state
+
+## Authentication Flow
+
+1. **User Registration**
+   - Form validation
+   - Password hashing
+   - User creation in database
+
+2. **User Login**
+   - Credential verification
+   - JWT token generation
+   - Session management
+
+3. **Protected Routes**
+   - Route guards
+   - Token validation
+   - User context
+
+## API Endpoints
+
+1. **Authentication**
+   - POST /api/auth/register
+   - POST /api/auth/login
+   - GET /api/auth/me
+
+2. **Movies**
+   - GET /api/movies
+   - GET /api/movies/:id
+   - POST /api/movies
+   - PUT /api/movies/:id
+
+3. **Reviews**
+   - GET /api/reviews
+   - POST /api/reviews
+   - PUT /api/reviews/:id
+   - DELETE /api/reviews/:id
+
+## Security Measures
+
+1. **Authentication**
+   - JWT token-based authentication
+   - Password hashing
+   - Protected routes
+
+2. **Data Validation**
+   - Input sanitization
+   - Schema validation
+   - Error handling
+
+3. **CORS Configuration**
+   - Origin restrictions
+   - Method restrictions
+   - Header restrictions
+
+## Development Guidelines
+
+1. **Code Style**
+   - ESLint configuration
+   - Prettier formatting
+   - Component structure
+
+2. **Best Practices**
+   - Component composition
+   - State management
+   - Error handling
+   - Performance optimization
+
+3. **Testing**
+   - Unit tests
+   - Integration tests
+   - End-to-end tests
+
+## Deployment
+
+1. **Frontend**
+   - Build process
+   - Static file serving
+   - CDN configuration
+
+2. **Backend**
+   - Environment configuration
+   - Database connection
+   - Server optimization
+
+## Future Enhancements
+
+1. **Features**
+   - Social features
+   - Recommendation system
+   - Advanced search
+   - User profiles
+
+2. **Performance**
+   - Caching
+   - Lazy loading
+   - Code splitting
+
+3. **User Experience**
+   - Dark mode
+   - Accessibility
+   - Internationalization 
+
+## Recent Changes and Development History
+
+### Latest Modifications
+1. **LandingNavbar Component**
+   - Changed from `rounded-b-lg` to `rounded-lg` for consistent rounded corners
+   - Location: `client/src/components/LandingNavbar.jsx`
+   - Purpose: To make the navbar have rounded corners on all sides instead of just the bottom
+
+2. **CSS Implementation**
+   - Tailwind CSS integration in `client/src/index.css`
+   - Custom styling for components
+   - Responsive design considerations
+
+### Current Development Focus
+1. **UI/UX Improvements**
+   - Enhancing landing page components
+   - Implementing responsive design patterns
+   - Optimizing component styling
+
+2. **Component Structure**
+   - Landing page components are primary focus
+   - Navigation and layout components being refined
+   - Authentication flow implementation in progress
+
+### Next Steps
+1. **Immediate Tasks**
+   - Continue refining landing page components
+   - Implement remaining UI features
+   - Set up authentication flow
+
+2. **Pending Features**
+   - Complete user authentication system
+   - Implement movie listing and details pages
+   - Add review functionality
+
+### Development Notes
+- Using Tailwind CSS for styling
+- Following mobile-first responsive design approach
+- Implementing component-based architecture
+- Focusing on clean, maintainable code structure
+
+### Recent Decisions
+1. **Styling Approach**
+   - Using Tailwind CSS for rapid development
+   - Custom CSS for specific animations and effects
+   - Consistent use of utility classes
+
+2. **Component Design**
+   - Modular component structure
+   - Reusable UI components
+   - Context-based state management
+
+### Technical Debt
+1. **Pending Refactoring**
+   - Optimize component structure
+   - Improve code organization
+   - Enhance error handling
+
+2. **Documentation Needs**
+   - Add inline code comments
+   - Update component documentation
+   - Document API endpoints
+
+### Development Environment
+- React for frontend
+- Node.js/Express for backend
+- MongoDB for database
+- Tailwind CSS for styling 

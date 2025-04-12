@@ -1,0 +1,124 @@
+MOVIE SOCIAL APP - PROJECT STRUCTURE
+====================================
+
+Frontend (client):
+-----------------
+/client
+  ├── public/                      # Public assets, favicon, etc.
+  ├── src/
+  │   ├── components/              # Reusable components
+  │   │   ├── layout/              # Layout components
+  │   │   │   ├── Navbar.jsx       # Top navigation
+  │   │   │   ├── Sidebar.jsx      # Channel sidebar (Discord-style)
+  │   │   │   ├── ServerList.jsx   # Left server list (Discord-style)
+  │   │   │   └── UsersSidebar.jsx # Right users sidebar
+  │   │   ├── ui/                  # UI components
+  │   │   │   ├── Button.jsx
+  │   │   │   ├── Card.jsx
+  │   │   │   ├── Modal.jsx
+  │   │   │   └── ...
+  │   │   ├── movies/              # Movie-related components
+  │   │   │   ├── MovieCard.jsx
+  │   │   │   ├── MovieSearch.jsx
+  │   │   │   └── ...
+  │   │   ├── posts/               # Post-related components
+  │   │   │   ├── PostCard.jsx
+  │   │   │   ├── CreatePost.jsx
+  │   │   │   └── ...
+  │   │   └── chat/                # Chat-related components
+  │   │       ├── ChatBox.jsx
+  │   │       ├── MessageItem.jsx
+  │   │       └── ...
+  │   ├── pages/                   # Page components
+  │   │   ├── LandingPage.jsx      # Marketing/Welcome page
+  │   │   ├── LoginPage.jsx        # User login
+  │   │   ├── RegisterPage.jsx     # User registration
+  │   │   ├── HomePage.jsx         # Main dashboard/feed
+  │   │   ├── MoviesPage.jsx       # Movie listing and search
+  │   │   ├── PostsPage.jsx        # Social posts feed
+  │   │   ├── ProfilePage.jsx      # User profile
+  │   │   ├── WatchPartyPage.jsx   # Watch party planning
+  │   │   ├── ChatPage.jsx         # Chat interface
+  │   │   ├── SettingsPage.jsx     # User settings
+  │   │   └── NotFoundPage.jsx     # 404 page
+  │   ├── hooks/                   # Custom React hooks
+  │   │   ├── useAuth.js           # Authentication hook
+  │   │   ├── useMovies.js         # Movie data hook
+  │   │   └── ...
+  │   ├── context/                 # React context providers
+  │   │   ├── AuthContext.jsx      # Authentication context
+  │   │   ├── ThemeContext.jsx     # Theme/appearance context
+  │   │   └── ...
+  │   ├── services/                # API services
+  │   │   ├── api.js               # Base API setup
+  │   │   ├── movieApi.js          # Movie API calls
+  │   │   ├── authApi.js           # Auth API calls
+  │   │   └── ...
+  │   ├── utils/                   # Utility functions
+  │   │   ├── formatters.js        # Date, string formatters
+  │   │   ├── validators.js        # Form validation
+  │   │   └── ...
+  │   ├── App.jsx                  # Main App component
+  │   ├── main.jsx                 # Entry point
+  │   └── index.css                # Global styles
+  ├── vite.config.js               # Vite configuration
+  ├── package.json                 # Dependencies
+  └── ...
+
+Backend (server):
+----------------
+/server
+  ├── config/                      # Configuration files
+  │   ├── db.js                    # Database connection
+  │   ├── middleware.js            # Express middleware
+  │   └── ...
+  ├── controllers/                 # Route controllers
+  │   ├── authController.js        # Authentication
+  │   ├── userController.js        # User management
+  │   ├── movieController.js       # Movie data
+  │   ├── postController.js        # Social posts
+  │   ├── chatController.js        # Chat functionality
+  │   └── ...
+  ├── models/                      # Database models
+  │   ├── User.js                  # User model
+  │   ├── Movie.js                 # Movie model
+  │   ├── Post.js                  # Post model
+  │   ├── Comment.js               # Comment model
+  │   ├── Chat.js                  # Chat model
+  │   └── ...
+  ├── routes/                      # API routes
+  │   ├── authRoutes.js            # Auth endpoints
+  │   ├── userRoutes.js            # User endpoints
+  │   ├── movieRoutes.js           # Movie endpoints
+  │   ├── postRoutes.js            # Post endpoints
+  │   └── ...
+  ├── services/                    # Business logic
+  │   ├── movieApiService.js       # External movie API
+  │   ├── notificationService.js   # Notifications
+  │   └── ...
+  ├── utils/                       # Utility functions
+  │   ├── validators.js            # Data validation
+  │   ├── errorHandler.js          # Error handling
+  │   └── ...
+  ├── middleware/                  # Custom middleware
+  │   ├── auth.js                  # Authentication middleware
+  │   ├── error.js                 # Error handling middleware
+  │   └── ...
+  ├── socket/                      # Socket.io handlers
+  │   └── socketHandlers.js        # Real-time functionality
+  ├── index.js                     # Entry point
+  ├── package.json                 # Dependencies
+  └── ...
+
+Development Phases:
+-----------------
+1. Frontend UI Components (Discord-inspired)
+2. Authentication System
+3. Movie API Integration
+4. Social Feed Functionality
+5. Chat System
+6. Watch Party Feature
+7. User Connections & Friends
+8. Notifications
+9. Testing & Optimization
+10. Deployment 
