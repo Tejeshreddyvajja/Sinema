@@ -100,8 +100,11 @@ const SearchResultsPage = () => {
   };
 
   const handleSearchNavigation = (query) => {
-    // TODO: Implement search navigation functionality
-    console.log('Searching for:', query);
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      setShowSearch(false);
+      setSearchInput('');
+    }
   };
 
   if (isLoading) {
@@ -281,7 +284,7 @@ const SearchResultsPage = () => {
                         className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-full h-full bg-gray-600 rounded flex items-center justify-center">
                         <span className="text-gray-400 text-sm">No Poster</span>
                       </div>
                     )}
@@ -339,7 +342,7 @@ const SearchResultsPage = () => {
                           className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full bg-gray-600 rounded flex items-center justify-center">
                           <span className="text-gray-400 text-sm">No Poster</span>
                         </div>
                       )}

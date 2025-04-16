@@ -15,6 +15,8 @@ const MovieDetails = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [watchProviders, setWatchProviders] = useState(null);
+  const [collection, setCollection] = useState(null);
 
   // Get API key and image base URL from location state
   const { apiKey, imageBaseUrl } = location.state || {};
@@ -59,8 +61,14 @@ const MovieDetails = () => {
           `https://api.themoviedb.org/3/movie/${id}/videos?api_key=${apiKey}&language=en-US`
         );
 
+        // Fetch watch providers
+        const watchProvidersResponse = await fetch(
+          `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=${apiKey}`
+        );
+
         if (!movieResponse.ok || !castResponse.ok || !similarResponse.ok || 
-            !recommendationsResponse.ok || !reviewsResponse.ok || !videosResponse.ok) {
+            !recommendationsResponse.ok || !reviewsResponse.ok || !videosResponse.ok ||
+            !watchProvidersResponse.ok) {
           throw new Error('Failed to fetch movie data');
         }
 
@@ -70,6 +78,25 @@ const MovieDetails = () => {
         const recommendationsData = await recommendationsResponse.json();
         const reviewsData = await reviewsResponse.json();
         const videosData = await videosResponse.json();
+        const watchProvidersData = await watchProvidersResponse.json();
+
+        // Fetch collection data if movie belongs to a collection
+        if (movieData.belongs_to_collection) {
+          try {
+            const collectionResponse = await fetch(
+              `https://api.themoviedb.org/3/collection/${movieData.belongs_to_collection.id}?api_key=${apiKey}&language=en-US`
+            );
+            
+            if (collectionResponse.ok) {
+              const collectionData = await collectionResponse.json();
+              setCollection(collectionData);
+            }
+          } catch (error) {
+            console.error('Error fetching collection data:', error);
+          }
+        } else {
+          setCollection(null);
+        }
 
         setMovie(movieData);
         setCast(castData.cast.slice(0, 10));
@@ -77,6 +104,7 @@ const MovieDetails = () => {
         setRecommendations(recommendationsData.results.slice(0, 6));
         setReviews(reviewsData.results);
         setVideos(videosData.results);
+        setWatchProviders(watchProvidersData.results);
 
         // Check if movie is in watchlist (you would implement this with your backend)
         // For now, we'll just set it to false
@@ -308,6 +336,158 @@ const MovieDetails = () => {
                   <div>
                     <h2 className="text-2xl font-bold mb-4">Overview</h2>
                     <p className="text-gray-300 text-lg mb-8">{movie.overview}</p>
+                    
+                    {/* Collections & Franchises Section */}
+                    {collection && (
+                      <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4">Part of the {collection.name}</h3>
+                        <div className="relative overflow-hidden rounded-xl mb-4">
+                          {collection.backdrop_path && (
+                            <img 
+                              src={`${imageBaseUrl}${collection.backdrop_path}`} 
+                              alt={collection.name}
+                              className="w-full h-48 object-cover"
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+                          <div className="absolute bottom-0 left-0 p-4">
+                            <h4 className="text-lg font-bold">{collection.name}</h4>
+                            <p className="text-sm text-gray-300">{collection.parts?.length || 0} Movies</p>
+                          </div>
+                        </div>
+                        
+                        <p className="text-gray-300 mb-4">{collection.overview}</p>
+                        
+                        {collection.parts && collection.parts.length > 0 && (
+                          <div>
+                            <h4 className="text-lg font-semibold mb-2">Movies in this Collection</h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                              {collection.parts
+                                .sort((a, b) => new Date(a.release_date || '9999') - new Date(b.release_date || '9999'))
+                                .map((movie) => (
+                                  <div 
+                                    key={movie.id} 
+                                    className="cursor-pointer group"
+                                    onClick={() => navigate(`/movie/${movie.id}`, { state: { apiKey, imageBaseUrl } })}
+                                  >
+                                    <div className="relative overflow-hidden rounded-lg mb-2">
+                                      {movie.poster_path ? (
+                                        <img
+                                          src={`${imageBaseUrl}${movie.poster_path}`}
+                                          alt={movie.title}
+                                          className="w-full h-auto transition-transform duration-300 group-hover:scale-110"
+                                        />
+                                      ) : (
+                                        <div className="bg-gray-800 aspect-[2/3] flex items-center justify-center">
+                                          <span className="text-gray-500 text-sm">No Poster</span>
+                                        </div>
+                                      )}
+                                      {movie.id === parseInt(id) && (
+                                        <div className="absolute inset-0 bg-indigo-600/60 flex items-center justify-center">
+                                          <span className="text-white font-bold">Current Movie</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <h5 className="text-sm font-medium truncate group-hover:text-indigo-400">{movie.title}</h5>
+                                    {movie.release_date && (
+                                      <p className="text-xs text-gray-400">{new Date(movie.release_date).getFullYear()}</p>
+                                    )}
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Watch Providers Section */}
+                    {watchProviders && Object.keys(watchProviders).length > 0 && (
+                      <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4">Where to Watch</h3>
+                        <div className="grid grid-cols-1 gap-6">
+                          {watchProviders.US && (
+                            <div>
+                              <h4 className="text-lg font-semibold mb-2">United States</h4>
+                              
+                              {/* Streaming */}
+                              {watchProviders.US.flatrate && watchProviders.US.flatrate.length > 0 && (
+                                <div className="mb-4">
+                                  <h5 className="text-md font-medium text-gray-400 mb-2">Stream</h5>
+                                  <div className="flex flex-wrap gap-3">
+                                    {watchProviders.US.flatrate.map(provider => (
+                                      <div key={provider.provider_id} className="flex flex-col items-center">
+                                        <div className="w-12 h-12 rounded-lg overflow-hidden mb-1">
+                                          <img 
+                                            src={`${imageBaseUrl}${provider.logo_path}`} 
+                                            alt={provider.provider_name}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                        <span className="text-xs text-center text-gray-300">{provider.provider_name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Rent */}
+                              {watchProviders.US.rent && watchProviders.US.rent.length > 0 && (
+                                <div className="mb-4">
+                                  <h5 className="text-md font-medium text-gray-400 mb-2">Rent</h5>
+                                  <div className="flex flex-wrap gap-3">
+                                    {watchProviders.US.rent.map(provider => (
+                                      <div key={provider.provider_id} className="flex flex-col items-center">
+                                        <div className="w-12 h-12 rounded-lg overflow-hidden mb-1">
+                                          <img 
+                                            src={`${imageBaseUrl}${provider.logo_path}`} 
+                                            alt={provider.provider_name}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                        <span className="text-xs text-center text-gray-300">{provider.provider_name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Buy */}
+                              {watchProviders.US.buy && watchProviders.US.buy.length > 0 && (
+                                <div className="mb-4">
+                                  <h5 className="text-md font-medium text-gray-400 mb-2">Buy</h5>
+                                  <div className="flex flex-wrap gap-3">
+                                    {watchProviders.US.buy.map(provider => (
+                                      <div key={provider.provider_id} className="flex flex-col items-center">
+                                        <div className="w-12 h-12 rounded-lg overflow-hidden mb-1">
+                                          <img 
+                                            src={`${imageBaseUrl}${provider.logo_path}`} 
+                                            alt={provider.provider_name}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                        <span className="text-xs text-center text-gray-300">{provider.provider_name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Link to watch */}
+                              {watchProviders.US.link && (
+                                <a 
+                                  href={watchProviders.US.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors mt-2"
+                                >
+                                  View All Watch Options
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Additional info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
