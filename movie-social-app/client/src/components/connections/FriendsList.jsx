@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { act } from 'react';
 import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
+
 
 const FriendsList = ({ friends }) => {
+  const navigate=useNavigate();
+  const handleSendMessage = (friend) => {
+    navigate('/messages', {
+      state: {
+        activeChat: {
+          id: friend.id,
+          name: friend.name,
+          lastMessage: '',
+          timestamp: 'Now',
+          unread: 0
+        }
+      }
+    });
+  };
   if (friends.length === 0) {
     return (
       <div className="text-center py-6 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50">
@@ -50,7 +66,8 @@ const FriendsList = ({ friends }) => {
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={() => {/* TODO: Implement chat */}}
+              onClick={() => {handleSendMessage(friend);}}
+              
               className="p-1.5 text-gray-400 hover:text-blue-400 transition-all duration-300 hover:scale-110 hover:bg-blue-500/10 rounded-md"
               title="Send message"
             >

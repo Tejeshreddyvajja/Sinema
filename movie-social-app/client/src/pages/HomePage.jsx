@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SignOutButton, useUser } from '@clerk/clerk-react';
 import HomeNavbar from '../components/layout/HomeNavbar';
 import MovieRecommendations from '../components/movies/MovieRecommendations';
+import NotificationsPanel from '../components/posts/NotificationsPanel';
 
 const HomePage = () => {
   const { user } = useUser();
@@ -18,6 +19,10 @@ const HomePage = () => {
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
   const [debounceTimer, setDebounceTimer] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: 'New message from John', time: 'Just now' },
+  ]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
 
   // TMDB API details
@@ -222,6 +227,22 @@ const HomePage = () => {
     };
   }, []);
 
+  const addNotification = (message) => {
+    setNotifications((prev) => [
+      { id: prev.length + 1, message, time: 'Just now' },
+      ...prev,
+    ]);
+  };
+
+  // Simulate receiving a new message
+  useEffect(() => {
+    const timer = setInterval(() => {
+      addNotification('You have a new message!');
+    }, 10000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#08369a] to-[#000000] flex items-center justify-center">
@@ -350,12 +371,23 @@ const HomePage = () => {
             </div>
 
             {/* Notification Icon */}
-            <button className="text-gray-300 hover:text-white transition-colors relative">
+            <button
+              className="text-gray-300 hover:text-white transition-colors relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+              {notifications.length > 0 && (
+                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
             </button>
+
+            {showNotifications && (
+              <div className="absolute right-4 top-16 z-50 max-w-xs w-full transform transition-all duration-300">
+                <NotificationsPanel notifications={notifications} />
+              </div>
+            )}
 
             {/* Profile Section */}
             <div className="relative">
@@ -757,4 +789,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage; 
+export default HomePage;

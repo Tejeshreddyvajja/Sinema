@@ -2,38 +2,57 @@ import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-const PostCard = ({ post }) => {
-  const [isLiked, setIsLiked] = useState(post.isLiked);
-  const [isSaved, setIsSaved] = useState(post.isSaved);
-  const [showComments, setShowComments] = useState(false);
-  const [newComment, setNewComment] = useState('');
-  const [showShareOptions, setShowShareOptions] = useState(false);
-  const [comments, setComments] = useState([
+const PostCard = ({ post = {
+  id: '1',
+  user: {
+    id: 'user1',
+    name: 'John Doe',
+    avatar: 'https://i.pravatar.cc/150?img=1',
+  },
+  content: 'Just watched Inception for the 5th time. The visual effects still blow my mind! 🎬 #Inception #MovieNight',
+  timestamp: '2h ago',
+  likes: 42,
+  isLiked: false,
+  isSaved: false,
+  reactions: {
+    '❤️': 15,
+    '😂': 8,
+    '😮': 12,
+    '😢': 3,
+    '😡': 1,
+  },
+  media: [
     {
-      id: 1,
-      user: {
-        name: 'Alex Johnson',
-        avatar: 'https://i.pravatar.cc/150?img=3'
-      },
-      content: 'I completely agree! The cinematography in this scene was breathtaking.',
-      timestamp: '1h ago'
+      type: 'image',
+      url: 'https://source.unsplash.com/random/800x600?movie',
+      description: 'Movie scene screenshot'
     },
     {
-      id: 2,
-      user: {
-        name: 'Sarah Wilson',
-        avatar: 'https://i.pravatar.cc/150?img=4'
-      },
-      content: 'The soundtrack really elevated the whole experience.',
-      timestamp: '45m ago'
+      type: 'image',
+      url: 'https://source.unsplash.com/random/800x600?cinema',
+      description: 'Behind the scenes'
     }
-  ]);
+  ],
+  movie: {
+    id: 'movie1',
+    title: 'Inception',
+    year: '2010',
+    poster: 'https://source.unsplash.com/random/300x450?movie-poster',
+    rating: 8.8
+  },
+  shares: 12,
+  reposts: 5
+}, onLike }) => {
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [isSaved, setIsSaved] = useState(post.isSaved);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [comments, setComments] = useState([]);
   const navigate = useNavigate();
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    // TODO: Implement like functionality
-  };
+  // Truncate content for non-expanded view
+  const shouldTruncate = post.content.length > 280;
+  const truncatedContent = shouldTruncate ? `${post.content.slice(0, 280)}...` : post.content;
 
   const handleSave = () => {
     setIsSaved(!isSaved);
@@ -96,22 +115,59 @@ const PostCard = ({ post }) => {
   };
 
   return (
-    <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 shadow-lg w-full max-w-xl mx-auto">
-      {/* User Info */}
-      <div className="flex items-center space-x-3 mb-4">
+    <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-700/50">
+      {/* Author Info with Enhanced Contrast */}
+      <div className="flex items-center space-x-4 mb-6">
         <img
           src={post.user.avatar}
           alt={post.user.name}
-          className="w-10 h-10 rounded-full"
+          className="w-12 h-12 rounded-full ring-2 ring-indigo-500/50"
         />
         <div>
-          <h3 className="font-medium text-white">{post.user.name}</h3>
-          <p className="text-sm text-gray-400">{post.timestamp}</p>
+          <h3 className="text-lg font-semibold text-white hover:text-indigo-400 transition-colors">
+            {post.user.name}
+          </h3>
+          <span className="text-xs text-gray-500">{post.timestamp}</span>
         </div>
       </div>
 
-      {/* Post Content */}
-      <p className="text-gray-300 mb-4">{post.content}</p>
+      {/* Post Content with Expandable Text */}
+      <div className="mb-6">
+        <div className={`prose prose-invert max-w-none ${!isExpanded && shouldTruncate ? 'line-clamp-4' : ''}`}>
+          <p className="text-gray-300">{isExpanded ? post.content : truncatedContent}</p>
+        </div>
+        {shouldTruncate && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-indigo-400 hover:text-indigo-300 text-sm mt-2 transition-colors"
+          >
+            {isExpanded ? 'Show less' : 'Read more'}
+          </button>
+        )}
+      </div>
+
+      {/* Media Content */}
+      {post.media && (
+        <div className="mb-6 rounded-lg overflow-hidden">
+          <div className="grid grid-cols-2 gap-2">
+            {post.media.map((item, index) => (
+              <div key={index} className="aspect-video relative">
+                {item.type === 'image' ? (
+                  <img src={item.url} alt="" className="w-full h-full object-cover rounded-lg" />
+                ) : (
+                  <video 
+                    controls 
+                    className="w-full h-full object-cover rounded-lg"
+                    poster={item.thumbnail}
+                  >
+                    <source src={item.url} type="video/mp4" />
+                  </video>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Movie Info */}
       {post.movie && (
@@ -131,23 +187,23 @@ const PostCard = ({ post }) => {
         </div>
       )}
 
-      {/* Post Actions */}
+      {/* Actions Bar */}
       <div className="flex items-center justify-between border-t border-gray-700/50 pt-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
           <button
-            onClick={handleLike}
-            className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+            onClick={onLike}
+            className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors group"
           >
-            {isLiked ? (
-              <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            )}
-            <span>{post.likes + (isLiked ? 1 : 0)}</span>
+            <svg className={`w-5 h-5 ${post.isLiked ? 'text-red-500 fill-current' : ''}`} 
+                 fill="none" 
+                 stroke="currentColor" 
+                 viewBox="0 0 24 24">
+              <path strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            <span>{post.likes}</span>
           </button>
           <button
             onClick={() => setShowComments(!showComments)}
@@ -258,4 +314,4 @@ const PostCard = ({ post }) => {
   );
 };
 
-export default PostCard; 
+export default PostCard;

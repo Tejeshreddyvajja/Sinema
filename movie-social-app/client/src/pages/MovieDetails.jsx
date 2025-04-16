@@ -188,7 +188,7 @@ const MovieDetails = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ 
             backgroundImage: `url(${imageBaseUrl}${movie.backdrop_path})`,
-            filter: 'blur(8px) brightness(0.4)'
+            // filter: 'blur(0.5px) brightness(0.8)'
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#08369a] to-transparent" />

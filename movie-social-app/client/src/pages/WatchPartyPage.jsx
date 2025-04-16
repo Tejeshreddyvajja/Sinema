@@ -3,7 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import WatchPartyPlayer from '../components/watchparty/WatchPartyPlayer';
 import WatchPartyChat from '../components/watchparty/WatchPartyChat';
 
+const WATCH_PARTY_ENABLED = false;
+
 const WatchPartyPage = () => {
+  if (!WATCH_PARTY_ENABLED) {
+    return (
+      <div className="text-center mt-10">
+        <h1 className="text-2xl font-bold text-gray-700">Watch Party is currently disabled.</h1>
+      </div>
+    );
+  }
+
   const { partyId } = useParams();
   const navigate = useNavigate();
   const [isJoined, setIsJoined] = useState(false);

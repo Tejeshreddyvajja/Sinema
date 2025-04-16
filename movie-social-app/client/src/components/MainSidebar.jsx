@@ -8,7 +8,7 @@ const MainSidebar = () => {
   const userName = user?.fullName || 'User';
 
   return (
-    <div className="fixed left-0 top-0 h-screen w-16 bg-gray-800/30 flex flex-col items-center py-4 rounded-r-xl">
+    <div className="fixed left-0 top-0 h-screen w-16 bg-gray-800/30 flex flex-col items-center py-4 ml-1 rounded-l-xl rounded-r-xl">
       {/* Logo */}
       <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white mb-6 shadow-lg">
         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">

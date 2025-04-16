@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import FriendsList from '../components/connections/FriendsList';
 import FriendRequests from '../components/connections/FriendRequests';
@@ -7,7 +8,15 @@ import MainSidebar from '../components/MainSidebar';
 
 const ConnectionsPage = () => {
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState('friends');
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'friends');
+
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
 
   // Mock data - replace with actual data from backend
   const mockFriends = [

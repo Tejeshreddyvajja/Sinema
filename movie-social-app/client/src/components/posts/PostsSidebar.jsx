@@ -85,4 +85,4 @@ const PostsSidebar = () => {
   );
 };
 
-export default PostsSidebar; 
+export default PostsSidebar;

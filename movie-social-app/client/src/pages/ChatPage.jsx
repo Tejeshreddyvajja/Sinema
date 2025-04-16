@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useUser } from '@clerk/clerk-react';
+import MainSidebar from '../components/MainSidebar';
 import ChatList from '../components/chat/ChatList';
 import ChatWindow from '../components/chat/ChatWindow';
 
 const ChatPage = () => {
   const { user } = useUser();
   const [activeChat, setActiveChat] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isChatListVisible, setIsChatListVisible] = useState(true); // For toggling ChatList visibility
 
-  // Mock data for chats
   const chats = [
     {
       id: 1,
@@ -16,7 +18,7 @@ const ChatPage = () => {
       timestamp: '2h ago',
       unread: 3,
       members: 12,
-      isGroup: true
+      isGroup: true,
     },
     {
       id: 2,
@@ -24,7 +26,7 @@ const ChatPage = () => {
       lastMessage: 'I loved that movie!',
       timestamp: '1d ago',
       unread: 0,
-      isGroup: false
+      isGroup: false,
     },
     {
       id: 3,
@@ -33,31 +35,62 @@ const ChatPage = () => {
       timestamp: '3d ago',
       unread: 5,
       members: 8,
-      isGroup: true
-    }
+      isGroup: true,
+    },
   ];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Chat List */}
-          <div className="col-span-12 md:col-span-4">
-            <ChatList
-              chats={chats}
-              activeChat={activeChat}
-              onChatSelect={setActiveChat}
-            />
-          </div>
+  const handleChatSelect = (chat) => {
+    setActiveChat(chat);
+    setIsChatListVisible(false); // Hide ChatList on smaller screens
+  };
 
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar */}
+      <div className={`md:block ${isSidebarOpen ? 'block' : 'hidden'} w-20`}>
+        <MainSidebar />
+      </div>
+  
+      {/* Main Content */}
+      <div className="flex flex-col flex-1">
+        {/* Mobile Toggle */}
+        <div className="md:hidden p-2 bg-gray-200">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="px-4 py-2 bg-indigo-600 text-white rounded"
+          >
+            {isSidebarOpen ? 'Close Menu' : 'Open Menu'}
+          </button>
+        </div>
+  
+        <div className="flex flex-1 overflow-hidden">
+          {/* Chat List */}
+          {isChatListVisible || !activeChat ? (
+            <div className="w-full md:w-1/3 overflow-y-auto border-r">
+              <ChatList
+                chats={chats}
+                activeChat={activeChat}
+                onChatSelect={handleChatSelect}
+              />
+            </div>
+          ) : null}
+  
           {/* Chat Window */}
-          <div className="col-span-12 md:col-span-8">
-            <ChatWindow chat={activeChat} />
-          </div>
+          {!isChatListVisible && activeChat ? (
+            <div className="flex-1 overflow-y-auto">
+              <ChatWindow chat={activeChat} />
+              <button
+                onClick={() => setIsChatListVisible(true)} // Show ChatList on back
+                className="md:hidden px-4 py-2 bg-indigo-600 text-white rounded m-4"
+              >
+                Back to Chats
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
   );
 };
 
-export default ChatPage; 
+export default ChatPage;

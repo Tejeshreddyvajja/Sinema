@@ -93,3 +93,85 @@ body {
 .modal-content {
   @apply bg-gray-800/90 rounded-xl p-6 max-w-lg w-full mx-4;
 }
+
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.2s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.2s ease-out;
+}
+
+/* Message bubble styles */
+.message-bubble {
+  @apply relative px-4 py-2 max-w-sm ml-2 mr-2 rounded-lg;
+  min-width: 80px;
+}
+
+.message-bubble-right {
+  @apply bg-gray-600/90 text-white rounded-t-2xl rounded-l-2xl rounded-br-md;
+  margin-right: 8px;
+}
+
+.message-bubble-left {
+  @apply bg-gray-800/90 text-gray-200 rounded-t-2xl rounded-r-2xl rounded-bl-md;
+  margin-left: 8px;
+}
+
+.message-text {
+  @apply text-xs leading-snug break-words whitespace-pre-wrap mb-2;
+  padding-right: 40px; /* Space for timestamp */
+}
+
+.message-time {
+  @apply text-[11px] opacity-70;
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+}
+
+/* Remove existing bubble tails and replace with new ones */
+.bubble-tail-right::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+.bubble-tail-left::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}

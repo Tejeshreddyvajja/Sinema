@@ -1,10 +1,69 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from '../../Redux/friendsSlice';
 
 const FriendRequests = ({ requests }) => {
+  const dispatch = useDispatch();
+  const currentUser = useSelector(state => state.auth.user);
+  // Fix: Add fallback for loading state when friends slice might not be initialized
+  const friendsState = useSelector(state => state.friends);
+  const loading = friendsState ? friendsState.loading : false;
+  
+  // Local loading state as a backup
+  const [localLoading, setLocalLoading] = useState(false);
+  
   const receivedRequests = requests.filter(req => req.type === 'received');
   const sentRequests = requests.filter(req => req.type === 'sent');
+
+  const handleAcceptRequest = async (requestId, fromUserId) => {
+    try {
+      setLocalLoading(true);
+      await dispatch(acceptFriendRequest({
+        fromUserId,
+        toUserId: currentUser?.id,
+        requestId
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to accept request:', error);
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const handleDeclineRequest = async (requestId, fromUserId) => {
+    try {
+      setLocalLoading(true);
+      await dispatch(declineFriendRequest({
+        fromUserId,
+        toUserId: currentUser?.id,
+        requestId
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to decline request:', error);
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const handleCancelRequest = async (requestId, toUserId) => {
+    try {
+      setLocalLoading(true);
+      await dispatch(cancelFriendRequest({
+        fromUserId: currentUser?.id,
+        toUserId,
+        requestId
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to cancel request:', error);
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  // Use either Redux loading state or local loading state
+  const isLoading = loading || localLoading;
 
   if (requests.length === 0) {
     return (
@@ -58,16 +117,18 @@ const FriendRequests = ({ requests }) => {
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => {/* TODO: Implement accept request */}}
-                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-500 transition-all duration-300 hover:shadow-md hover:shadow-blue-500/20 font-medium"
+                    onClick={() => handleAcceptRequest(request.id, request.userId)}
+                    disabled={isLoading}
+                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-500 transition-all duration-300 hover:shadow-md hover:shadow-blue-500/20 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Accept
+                    {isLoading ? 'Processing...' : 'Accept'}
                   </button>
                   <button
-                    onClick={() => {/* TODO: Implement decline request */}}
-                    className="px-3 py-1 bg-gray-700/50 text-gray-300 text-xs rounded-md hover:bg-gray-600/50 transition-all duration-300 font-medium"
+                    onClick={() => handleDeclineRequest(request.id, request.userId)}
+                    disabled={isLoading}
+                    className="px-3 py-1 bg-gray-700/50 text-gray-300 text-xs rounded-md hover:bg-gray-600/50 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Decline
+                    {isLoading ? 'Processing...' : 'Decline'}
                   </button>
                 </div>
               </div>
@@ -101,10 +162,11 @@ const FriendRequests = ({ requests }) => {
                   <p className="text-xs text-gray-400 truncate">@{request.username}</p>
                 </div>
                 <button
-                  onClick={() => {/* TODO: Implement cancel request */}}
-                  className="px-3 py-1 bg-gray-700 text-gray-300 text-sm rounded-md hover:bg-gray-600 transition-colors"
+                  onClick={() => handleCancelRequest(request.id, request.userId)}
+                  disabled={isLoading}
+                  className="px-3 py-1 bg-gray-700 text-gray-300 text-xs rounded-md hover:bg-red-500/70 hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {isLoading ? 'Processing...' : 'Cancel'}
                 </button>
               </div>
             ))}
@@ -118,7 +180,8 @@ const FriendRequests = ({ requests }) => {
 FriendRequests.propTypes = {
   requests: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.number.isRequired,
+      id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+      userId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired, // Add this for the user ID who sent/received the request
       name: PropTypes.string.isRequired,
       username: PropTypes.string.isRequired,
       avatar: PropTypes.string.isRequired,

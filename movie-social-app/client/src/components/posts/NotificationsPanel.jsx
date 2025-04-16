@@ -1,13 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const NotificationsPanel = () => {
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'New comment on your post', time: '2m ago' },
-    { id: 2, message: 'Someone liked your post', time: '5m ago' },
-    { id: 3, message: 'New follower', time: '10m ago' },
-    { id: 4, message: 'Movie recommendation', time: '1h ago' },
-  ]);
-
+const NotificationsPanel = ({ notifications = [] }) => {
   return (
     <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 shadow-lg max-w-xs mt-4">
       <div className="flex items-center justify-between mb-4">
@@ -31,4 +24,4 @@ const NotificationsPanel = () => {
   );
 };
 
-export default NotificationsPanel; 
+export default NotificationsPanel;
