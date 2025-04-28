@@ -1,0 +1,978 @@
+I'll examine your client app more thoroughly to understand its structure and suggest specific changes for accessing real user data from Clerk and implementing a friend-finding feature.
+
+Ran tool
+
+Read file: project - mark1/movie-social-app/client/src/main.jsx
+
+Read file: project - mark1/movie-social-app/client/src/App.jsx
+
+Ran tool
+
+Read file: project - mark1/movie-social-app/client/src/pages/ConnectionsPage.jsx
+
+Read file: project - mark1/movie-social-app/client/src/components/connections/UserSearch.jsx
+
+Read file: project - mark1/movie-social-app/client/src/components/connections/FriendsList.jsx
+Based on my review of your client application, I can see that you already have:
+1. Clerk authentication set up
+2. A ConnectionsPage with tabs for Friends, Friend Requests, and Find Friends
+3. Components for displaying/managing friends
+
+However, all of these are using mock data instead of real Clerk user data. Let's implement the changes needed to get real user data and enable friend functionality.
+
+### 1. Creating a Users Service
+
+First, let's create a service to interact with Clerk users:
+
+// src/services/usersService.js
+import axios from 'axios';
+
+// Base URL for your backend API
+const API_URL = 'http://localhost:5000/api';
+
+// Get all Clerk users for the find friends feature
+export const getAllUsers = async (token) => {
+  try {
+    const response = await axios.get(`${API_URL}/users`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
+// Send a friend request
+export const sendFriendRequest = async (token, receiverId) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/friends/request`, 
+      { receiverId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error sending friend request:', error);
+    throw error;
+  }
+};
+
+// Get pending friend requests
+export const getPendingRequests = async (token) => {
+  try {
+    const response = await axios.get(`${API_URL}/friends/pending`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching pending requests:', error);
+    throw error;
+  }
+};
+
+// Accept or reject a friend request
+export const respondToFriendRequest = async (token, requestId, status) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/friends/respond/${requestId}`,
+      { status }, // 'accepted' or 'rejected'
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error responding to friend request:', error);
+    throw error;
+  }
+};
+
+// Get user's friends
+export const getFriends = async (token) => {
+  try {
+    const response = await axios.get(`${API_URL}/friends`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching friends:', error);
+    throw error;
+  }
+};
+
+### 2. Update the UserSearch Component
+
+Replace the mock data in your UserSearch component with real Clerk user data:
+
+```jsx
+// src/components/connections/UserSearch.jsx
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
+import { getAllUsers, sendFriendRequest } from '../../services/usersService';
+
+const UserSearch = ({ currentUser }) => {
+  const { getToken } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Fetch all users when component mounts
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {{
+        ) => {
+      try {
+        setIsSearching(true);
+        const token = await getToken();
+        const fetchedUsers = await getAllUsers(token);
+        // Filter out the current user
+        const otherUsers = fetchedUsers.filter(user => user.clerkId !== currentUser.id);
+        setUsers(otherUsers);
+        setFilteredUsers(otherUsers);
+      } catch (err) {
+        setError('Failed to load users. Please try again later.');
+        console.error(err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    fetchUsers();
+  }, [currentUser.id, getToken]);
+
+  // Filter users based on search query
+  useEffect(() => {
+    if (searchQuery) {
+      const filtered = users.filter(user => 
+        user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.lastName?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    } else {
+      setFilteredUsers(users);
+    }
+  }, [searchQuery, users]);
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSendFriendRequest = async (userId) => {
+    try {
+      const token = await getToken();
+      await sendFriendRequest(token, userId);
+      // Update UI to show request has been sent
+      setUsers(prevUsers => prevUsers.map(user => 
+        user.clerkId === userId ? { ...user, requestSent: true } : user
+      ));
+      setFilteredUsers(prevUsers => prevUsers.map(user => 
+        user.clerkId === userId ? { ...user, requestSent: true } : user
+      ));
+    } catch (err) {
+      setError('Failed to send friend request. Please try again.');
+      console.error(err);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Search Input */}
+      <div className="relative">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleSearch}
+          placeholder="Search users by name or username..."
+          className="w-full bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 text-white placeholder-gray-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500/30 hover:border-gray-600/50 transition-all duration-300"
+        />
+        <div className="absolute right-3 top-3">
+          <svg
+            className={`h-5 w-5 text-gray-400 ${isSearching ? 'animate-spin' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="text-center p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Search Results */}
+      {filteredUsers.length > 0 ? (
+        <div className="space-y-3">
+          {filteredUsers.map((user) => (
+            <div
+              key={user.clerkId}
+              className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-lg p-3 flex items-center space-x-3 hover:bg-gray-800/50 hover:border-blue-500/30 transition-all duration-300 group"
+            >
+              <img
+                src={user.profilePicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`}
+                alt={`${user.firstName} ${user.lastName}`}
+                className="h-9 w-9 rounded-full bg-gray-700 ring-1 ring-gray-700/50 group-hover:ring-blue-500/50 transition-all duration-300 object-cover"
+              />
+              <div className="flex-1 min-w-0">
+                <Link 
+                  to={`/profile/${user.username}`}
+                  className="text-sm font-medium text-white hover:text-blue-400 truncate block transition-colors duration-300"
+                >
+                  {user.firstName} {user.lastName}
+                  </Link>
+                <p className="text-xs text-gray-400 truncate">@{user.username}</p>
+              </div>
+              <button
+                onClick={() => handleSendFriendRequest(user.clerkId)}
+                disabled={user.requestSent}
+                className={`px-3 py-1 text-xs rounded-md font-medium transition-all duration-300 ${
+                  user.requestSent 
+                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-500 hover:shadow-md hover:shadow-blue-500/20'
+                }`}
+              >
+                {user.requestSent ? 'Request Sent' : 'Add Friend'}
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-6 bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-lg">
+          <p className="text-gray-400 text-xs">
+            {searchQuery ? No users found matching "${searchQuery}" : 'No users found'}
+          </p>
+        </div>
+      )}
+
+      {/* Initial State */}
+      {!filteredUsers.length && !searchQuery && !isSearching && (
+        <div className="text-center py-16 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50">
+          <div className="bg-gray-700/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="h-8 w-8 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-200 mb-2">Find Friends</h3>
+          <p className="text-gray-400">
+            Search for users by name or username to connect with them
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+UserSearch.propTypes = {
+  currentUser: PropTypes.object.isRequired,
+};
+
+export default UserSearch;
+```
+
+```
+
+### 3. Update the FriendsList Component
+
+Replace mock data with real friend data:
+
+```jsx
+// src/components/connections/FriendsList.jsx
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
+import { getFriends } from '../../services/usersService';
+
+const FriendsList = () => {
+  const navigate = useNavigate();
+  const { getToken } = useAuth();
+  const [friends, setFriends] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        setIsLoading(true);
+        const token = await getToken();
+        const fetchedFriends = await getFriends(token);
+        setFriends(fetchedFriends);
+      } catch (err) {
+        setError('Failed to load friends. Please try again later.');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFriends();
+  }, [getToken]);
+
+  const handleSendMessage = (friend) => {
+    navigate('/messages', {
+      state: {
+        activeChat: {
+          id: friend.clerkId,
+          name: ${friend.firstName} ${friend.lastName},
+          lastMessage: '',
+          timestamp: 'Now',
+          unread: 0
+        }
+      }
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-6">
+        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+        <p className="text-gray-400 mt-2">Loading friends...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-6 bg-red-500/20 border border-red-500/30
+      he ConnectionsPage
+
+Update your ConnectionsPage to handle the friend-related actions:
+
+// src/pages/ConnectionsPage.jsx
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useUser, useAuth } from '@clerk/clerk-react';
+import FriendsList from '../components/connections/FriendsList';
+import FriendRequests from '../components/connections/FriendRequests';
+import UserSearch from '../components/connections/UserSearch';
+import MainSidebar from '../components/MainSidebar';
+import { getPendingRequests } from '../services/usersService';
+
+const ConnectionsPage = () => {
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'friends');
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      try {
+        setIsLoading(true);
+        const token = await getToken();
+        const requests = await getPendingRequests(token);
+        setPendingRequests(requests);
+      } catch (error) {
+        console.error('Error fetching friend requests:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPendingRequests();
+  }, [getToken]);
+
+  const tabs = [
+    { id: 'friends', label: 'Friends' },
+    { id: 'requests', label: 'Friend Requests' },
+    { id: 'find', label: 'Find Friends' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#08369a] to-[#000000] text-white">
+      <MainSidebar />
+      <div className="ml-16 pt-24 pb-8">
+        <div className="max-w-2xl mx-auto px-4">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Connections</h1>
+          <p className="text-gray-400">Manage your friends and connections</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-1 mb-8 max-w-lg mx-auto">
+          <nav className="flex justify-center space-x-2">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-6 py-1 relative font-medium text-sm transition-all rounded-lg ${
+                  activeTab === tab.id
+                    ? 'text-white bg-blue-600 shadow-lg shadow-blue-500/20'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                {tab.label}
+                {tab.id === 'requests' && pendingRequests.filter(r => r.status === 'pending').length > 0 && (
+                  <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {pendingRequests.filter(r => r.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Content */}
+        <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-6 space-y-6">
+          {activeTab === 'friends' && (
+            <FriendsList />
+          )}
+          {activeTab === 'requests' && (
+            <FriendRequests 
+              requests={pendingRequests} 
+              isLoading={isLoading} 
+              onRefresh={() => {
+                // Implement refresh function
+              }}
+            />
+          )}
+          {activeTab === 'find' && (
+            <UserSearch currentUser={user} />
+          )}
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ConnectionsPage;
+
+### 5. Set Up Backend Connection Service
+
+To make this work, you need a backend server to handle these requests. Create a directory for your
+backend:
+
+mkdir -p server/src/{models,routes,controllers,config,middleware}
+
+Then create the basic server setup as I outlined in my previous message.
+
+### 6. Set Up JWT Verification Middleware
+
+The key part of connecting your frontend to the backend is verifying the Clerk JWT tokens.
+
+// server/src/middleware/auth.js
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
+
+const client = jwksClient({
+  jwksUri: `https://${process.env.CLERK_DOMAIN}/.well-known/jwks.json`,
+});
+
+const getKey = (header, callback) => {
+  client.getSigningKey(header.kid, (err, key) => {
+    if (err) return callback(err);
+    const signingKey = key.getPublicKey();
+    callback(null, signingKey);
+  });
+};
+
+export const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    
+    req.user = decoded;
+    next();
+  });
+};
+
+### 7. Set Up User and Friend Request Models
+
+Finally, create the necessary MongoDB models:
+
+// server/src/models/User.js
+import mongoose from 'mongoose';
+
+const userSchema = new mongoose.Schema({
+  clerkId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  firstName: {
+    type: String,
+    required: true,
+  },
+  lastName: {
+    type: String,
+    required: true,
+  },
+  username: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+  },
+  profilePicture: {
+    type: String,
+    default: '',
+  },
+  friends: [{
+    type: String, // ClerkId
+  }],
+}, {
+  timestamps: true,
+});
+
+const User = mongoose.model('User', userSchema);
+export default User;
+
+// server/src/models/FriendRequest.js
+import mongoose from 'mongoose';
+
+const friendRequestSchema = new mongoose.Schema({
+  sender: {
+    type: String, // ClerkId
+    required: true,
+  },
+  receiver: {
+    type: String, // ClerkId
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: 'pending',
+  },
+}, {
+  timestamps: true,
+});
+
+const FriendRequest = mongoose.model('FriendRequest', friendRequestSchema);
+export default FriendRequest;
+
+By implementing these changes, you'll be able to:
+
+1. Use real Clerk user data in your friend-finding feature
+2. Send and manage friend requests between users
+3. Display a user's friends list
+4. Get notified of new friend requests
+
+This implementation will work with your existing Clerk authentication setup and your current React components. Would you like me to explain any specific part in more detail?
+These MongoDB models don't automatically know about your Clerk user details. You need to create a system that syncs user data from Clerk to your MongoDB database. Here are the two main approaches to accomplish this:
+
+### 1. Using Clerk Webhooks (Recommended Approach)
+
+Clerk webhooks allow your backend to receive real-time notifications when users are created, updated, or deleted in Clerk. This is the most reliable way to keep your MongoDB database in sync with Clerk:
+
+// server/src/routes/webhookRoutes.js
+import express from 'express';
+import { Webhook } from 'svix';
+import User from '../models/User.js';
+
+const router = express.Router();
+
+router.post('/', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    // Verify the webhook signature
+    const payload = req.body.toString();
+    const headers = req.headers;
+    
+    const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+    const evt = wh.verify(payload, headers);
+    
+    const eventType = evt.type;
+    const { id, ...userData } = evt.data;
+    
+    // Handle different event types
+    if (eventType === 'user.created') {
+      // A new user was created in Clerk
+      await User.create({
+        clerkId: id,
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        username: userData.username || `user_${id.substring(0, 8)}`,
+        email: userData.email_addresses[0].email_address,
+        profilePicture: userData.image_url,
+      });
+      
+      console.log(`User ${id} created in MongoDB`);
+    } 
+    else if (eventType === 'user.updated') {
+      // An existing user was updated in Clerk
+      await User.findOneAndUpdate(
+        { clerkId: id },
+        {
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          username: userData.username,
+          email: userData.email_addresses[0].email_address,
+          profilePicture: userData.image_url,
+        }
+      );
+      
+      console.log(`User ${id} updated in MongoDB`);
+    }
+    else if (eventType === 'user.deleted') {
+      // A user was deleted in Clerk
+      await User.findOneAndDelete({ clerkId: id });
+      console.log(`User ${id} deleted from MongoDB`);
+    }
+    
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+export default router;
+
+To set up webhooks:
+1. Go to your Clerk Dashboard
+2. Navigate to Webhooks
+3. Create a new webhook endpoint pointing to your server (e.g., `https://your-api.com/api/webhooks`)
+4. Subscribe to the user.created, user.updated, and user.deleted events
+5. Save the webhook secret key and set it as CLERK_WEBHOOK_SECRET in your environment variables
+
+### 2. On-Demand Synchronization
+
+If you can't use webhooks (e.g., during development), you can synchronize user data when a user interacts with your application:
+
+```javascript
+// server/src/middleware/syncClerkUser.js
+import { clerkClient } from '@clerk/clerk-sdk-node';
+import User from '../models/User.js';
+
+export const syncClerkUser = async (req, res, next) => {
+  try {
+    // The user's Clerk ID should be available from the JWT verification
+    const { sub: clerkId } = req.user;
+    
+    // Check if user exists in MongoDB
+    let user = await User.findOne({ clerkId });
+    
+    // If user doesn't exist, get their data from Clerk and create them
+    if (!user) {
+      // Fetch user data from Clerk
+      const clerkUser = await clerkClient.users.getUser(clerkId);
+      
+      // Create user in MongoDB
+      user = await User.create({
+        clerkId,
+        firstName: clerkUser.firstName,
+        lastName: clerkUser.lastName,
+        username: clerkUser.username || user_${clerkId.substring(0, 8)},
+        email: clerkUser.emailAddresses[0].emailAddress,
+        profilePicture: clerkUser.profileImageUrl,
+      });
+      
+      console.log(`User ${clerkId} created in MongoDB`);
+    }
+    
+    // Attach MongoDB user to request for route handlers
+    req.mongoUser = user;
+    next();
+  }
+  catch (error) {
+    console.error('Error syncing Clerk user:', error);
+    next(error);
+  }
+};
+
+Then use this middleware in your routes:
+
+```javascript
+// server/src/routes/userRoutes.js
+import express from 'express';
+import { verifyToken } from '../middleware/auth.js';
+import { syncClerkUser } from '../middleware/syncClerkUser.js';
+import User from '../models/User.js';
+
+const router = express.Router();
+
+// Get current user's profile
+router.get('/me', verifyToken, syncClerkUser, async (req, res) => {
+  // req.mongoUser is already available thanks to syncClerkUser middleware
+  res.json(req.mongoUser);
+});
+
+// Get all users (for friend discovery)
+router.get('/', verifyToken, syncClerkUser, async (req, res) => {
+  try {
+    const users = await User.find({ clerkId: { $ne: req.user.sub } });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+export default router;
+
+### 3. Setting Up the Clerk-SDK-Node
+
+For the on-demand approach, you need to install and configure the Clerk Node.js SDK:
+
+npm install @clerk/clerk-sdk-node
+
+Then configure it in your server:
+
+// server/src/server.js
+import { Clerk } from '@clerk/clerk-sdk-node';
+
+// Initialize Clerk
+const clerk = new Clerk({ apiKey: process.env.CLERK_API_KEY });
+
+### Summary
+
+To connect Clerk users with your MongoDB database:
+
+1. Webhooks (Recommended): Set up Clerk webhooks to automatically sync user data to MongoDB whenever users are created/updated/deleted.
+
+2. On-Demand: Use the Clerk SDK to fetch user data and sync it to MongoDB when users make requests to your API.
+
+The advantage of webhooks is that your database stays in sync with Clerk automatically, even if users change their profile details through Clerk's user portal. The on-demand approach is simpler but less reliable since it only syncs data when users interact with your API.
+
+I recommend implementing both approaches:
+- Use webhooks as the primary sync mechanism
+- Use on-demand sync as a fallback to ensure data consistency
+
+Would you like me to expand on the implementation of either approach?
+Great! Here's a step-by-step guide to set up Clerk webhooks to sync user data to your MongoDB database:
+
+### Setting Up Clerk Webhooks
+
+1. Create a Webhook Endpoint:
+   - In your Clerk Dashboard, on the Webhooks page, click the "Add Endpoint" button.
+
+2. Configure the Endpoint URL:
+   - For production: Enter your API URL (e.g., `https://your-api.com/api/webhooks`)
+   - For development/testing: You'll need to expose your local server to the internet using a tool like ngrok:
+     1. Install ngrok: npm install -g ngrok or download from ngrok.com
+     2. Run your server (e.g., npm run dev in your server directory)
+     3. In a separate terminal, run: ngrok http 5000 (using your server port)
+     4. Copy the https URL provided by ngrok (e.g., `https://abc123.ngrok.io`)
+     5. Use this URL + "/api/webhooks" (e.g., `https://abc123.ngrok.io/api/webhooks`)
+
+3. Select Events:
+   - Scroll down to "Subscribe to events"
+   - Select the following events:
+     - user.created
+     - user.updated
+     - user.deleted
+
+4. Create the Webhook:
+   - Click "Create" to create your webhook endpoint
+
+5. Copy the Signing Secret:
+   - After creation, you'll be redirected to the webhook details page
+   - Find the "Signing Secret" field and click the eye icon to reveal it
+   - Copy this secret - you'll need it for your server
+
+6. Implement the Webhook Handler in Your Server:
+   - Create the webhook handling route in your server:
+
+```javascript
+// server/src/routes/webhookRoutes.js
+import express from 'express';
+import { Webhook } from 'svix';
+import User from '../models/User.js';
+
+const router = express.Router();
+
+// This route needs to be public (no authentication)
+router.post('/', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    // Verify the webhook signature
+    const payload = req.body.toString();
+    const headers = req.headers;
+    
+    const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+    const evt = wh.verify(payload, headers);
+    
+    const eventType = evt.type;
+    const { id, ...userData } = evt.data;
+    
+    console.log(`Received webhook: ${eventType} for user ${id}`);
+    
+    // Handle different event types
+    if (eventType === 'user.created') {
+      // Make sure we have the necessary data
+      const firstName = userData.first_name || '';
+      const lastName = userData.last_name || '';
+      const email = userData.email_addresses && userData.email_addresses.length > 0 
+        ? userData.email_addresses[0].email_address 
+        : '';
+      
+      // Create user in MongoDB
+      await User.create({
+        clerkId: id,
+        firstName,
+        lastName,
+        username: userData.username || user_${id.substring(0, 8)},
+        email,
+        profilePicture: userData.image_url || '',
+      });
+      
+      console.log(`User ${id} created in MongoDB`);
+    } 
+    else if (eventType === 'user.updated') {
+      // Update existing user
+      const updates = {
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        username: userData.username,
+        profilePicture: userData.image_url,
+      };
+      
+      // Only update email if available
+      if (userData.email_addresses && userData.email_addresses.length > 0) {
+        updates.email = userData.email_addresses[0].email_address;
+      }
+      
+      await User.findOneAndUpdate(
+        { clerkId: id },
+        updates,
+        { upsert: true } // Create if not exists
+      );
+      
+      console.log(`User ${id} updated in MongoDB`);
+    }
+    else if (eventType === 'user.deleted') {
+      // Delete user from MongoDB
+      await User.findOneAndDelete({ clerkId: id });
+      
+      // Optional: Also delete related data
+      // await FriendRequest.deleteMany({ 
+      //   $or: [{ sender: id }, { receiver: id }] 
+      // });
+      
+      console.log(`User ${id} deleted from MongoDB`);
+    }
+    
+    // Send success response
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(400).json({ success: false,
+    error: error.message });
+  }
+});
+
+export default router;
+
+7. **Add the Webhook Route to Your Server**:
+
+```javascript
+// server/src/server.js
+import express from 'express';
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import webhookRoutes from './routes/webhookRoutes.js';
+
+dotenv.config();
+
+const app = express();
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Regular middleware (for regular routes)
+app.use(cors());
+app.use(express.json());
+
+// Webhook routes (needs special handling)
+app.use('/api/webhooks', webhookRoutes);
+
+// Other routes
+// ...
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+8. Set Up Environment Variables:
+
+Create/update the .env file in your server directory:
+
+PORT=5000
+MONGODB_URI=your_mongodb_connection_string
+CLERK_WEBHOOK_SECRET=your_webhook_signing_secret
+
+9. Install Required Packages:
+
+npm install express mongoose dotenv cors svix
+
+10. Test the Webhook:
+    - In the Clerk Dashboard, go to the webhook details page
+    - Click on the "Testing" tab
+    - Select an event (e.g., `user.created`)
+    - Click "Send Example"
+    - Check your server logs to confirm it was received and processed
+    - Check your MongoDB to see if the user was created
+
+### Troubleshooting
+
+If your webhook is not working:
+
+1. Check Server Logs: Make sure your server is receiving the webhook and look for error messages.
+
+2. Verify ngrok: Ensure ngrok is running and the URL is correct.
+
+3. Check Webhook Secret: Make sure you've copied the correct signing secret.
+
+4. Check Payload Format: Log the raw payload to see what data Clerk is sending.
+
+5. Review Clerk Dashboard: Check the "Message Attempts" section in the webhook details to see if there are any delivery failures.
+
+6. Make Public Routes: Ensure webhook routes are public (not behind authentication).
+
+Now your system should automatically synchronize user data from Clerk to your MongoDB database whenever users are created, updated, or deleted in Clerk!npm install mongoose dotenv

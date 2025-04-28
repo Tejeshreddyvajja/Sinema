@@ -1,17 +1,16 @@
-import React, { act } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { Link, useNavigate } from 'react-router-dom';
-import { useClerk } from '@clerk/clerk-react';
 
-
-const FriendsList = ({ friends }) => {
-  const navigate=useNavigate();
+const FriendsList = ({ friends, loading }) => {
+  const navigate = useNavigate();
+  
   const handleSendMessage = (friend) => {
     navigate('/messages', {
       state: {
         activeChat: {
-          id: friend.id,
-          name: friend.name,
+          id: friend.clerkId,
+          name: `${friend.firstName} ${friend.lastName}`,
           lastMessage: '',
           timestamp: 'Now',
           unread: 0
@@ -19,7 +18,20 @@ const FriendsList = ({ friends }) => {
       }
     });
   };
-  if (friends.length === 0) {
+  
+  if (loading) {
+    return (
+      <div className="text-center py-6 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-8 w-8 bg-gray-700 rounded-full mb-3"></div>
+          <div className="h-4 bg-gray-700 rounded w-24 mb-2"></div>
+          <div className="h-3 bg-gray-700 rounded w-32"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!friends || friends.length === 0) {
     return (
       <div className="text-center py-6 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50">
         <div className="bg-gray-700/50 w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -47,27 +59,26 @@ const FriendsList = ({ friends }) => {
     <div className="space-y-3">
       {friends.map((friend) => (
         <div
-          key={friend.id}
+          key={friend.clerkId}
           className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-lg p-3 flex items-center space-x-3 hover:bg-gray-800/50 hover:border-blue-500/30 transition-all duration-300 group"
         >
           <img
-            src={friend.avatar}
-            alt={friend.name}
+            src={friend.profilePicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend.firstName}`}
+            alt={`${friend.firstName} ${friend.lastName}`}
             className="h-10 w-10 rounded-full bg-gray-700 ring-1 ring-gray-700/50 group-hover:ring-blue-500/50 transition-all duration-300 object-cover"
           />
           <div className="flex-1 min-w-0">
             <Link 
-              to={`/profile/${friend.username}`}
+              to={`/profile/${friend.clerkId}`}
               className="text-sm font-medium text-white hover:text-blue-400 truncate block transition-colors duration-300"
             >
-              {friend.name}
+              {friend.firstName} {friend.lastName}
             </Link>
-            <p className="text-xs text-gray-400 truncate">@{friend.username}</p>
+            <p className="text-xs text-gray-400 truncate">@{friend.clerkId}</p>
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={() => {handleSendMessage(friend);}}
-              
+              onClick={() => handleSendMessage(friend)}
               className="p-1.5 text-gray-400 hover:text-blue-400 transition-all duration-300 hover:scale-110 hover:bg-blue-500/10 rounded-md"
               title="Send message"
             >
@@ -133,12 +144,18 @@ const FriendsList = ({ friends }) => {
 FriendsList.propTypes = {
   friends: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-      username: PropTypes.string.isRequired,
-      avatar: PropTypes.string.isRequired,
+      clerkId: PropTypes.string.isRequired,
+      firstName: PropTypes.string.isRequired,
+      lastName: PropTypes.string.isRequired,
+      profilePicture: PropTypes.string,
     })
-  ).isRequired,
+  ),
+  loading: PropTypes.bool
+};
+
+FriendsList.defaultProps = {
+  friends: [],
+  loading: false
 };
 
 export default FriendsList;

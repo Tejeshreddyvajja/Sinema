@@ -1,46 +1,92 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useUser } from '@clerk/clerk-react';
+import { useLocation } from 'react-router-dom';
 import MainSidebar from '../components/MainSidebar';
 import ChatList from '../components/chat/ChatList';
 import ChatWindow from '../components/chat/ChatWindow';
-
-// Mock data for development
-const mockChats = [
-  {
-    id: 1,
-    name: 'John Doe',
-    lastMessage: 'Hey, want to watch the new Spider-Man?',
-    timestamp: '10:30 AM',
-    unread: 2,
-  },
-  {
-    id: 2,
-    name: 'Movie Club',
-    lastMessage: 'Alice: The new trailer looks amazing!',
-    timestamp: 'Yesterday',
-    unread: 0,
-    isGroup: true,
-    members: 5,
-  },
-  {
-    id: 3,
-    name: 'Sarah Wilson',
-    lastMessage: 'Thanks for the recommendation!',
-    timestamp: 'Yesterday',
-    unread: 0,
-  },
-];
+import axios from 'axios';
 
 const MessagesPage = () => {
+  const { user } = useUser();
+  const location = useLocation();
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeChat, setActiveChat] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Sidebar toggle state
-  const [isChatListVisible, setIsChatListVisible] = useState(true); // Chat list visibility toggle
-  const [hamburgerPosition, setHamburgerPosition] = useState({ top: 80, left: 20 }); // Initial position of the hamburger
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isChatListVisible, setIsChatListVisible] = useState(true);
+  const [hamburgerPosition, setHamburgerPosition] = useState({ top: 80, left: 20 });
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const dragStartRef = useRef(null); // To track drag start position
+  const dragStartRef = useRef(null);
+
+  // Fetch user's conversations
+  useEffect(() => {
+    const fetchChats = async () => {
+      if (!user?.id) return;
+      
+      setLoading(true);
+      
+      try {
+        // In a real implementation, you would fetch actual chat data from your backend
+        // For now, initializing with an empty array as we'll build conversations from friend interactions
+        setChats([]);
+      } catch (error) {
+        console.error('Error fetching chats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchChats();
+  }, [user?.id]);
+
+  // Handle active chat from route state (e.g. when starting a chat from profile page)
+  useEffect(() => {
+    if (location.state?.activeChat) {
+      // Check if this chat is already in our chats list
+      const existingChatIndex = chats.findIndex(chat => chat.id === location.state.activeChat.id);
+      
+      if (existingChatIndex >= 0) {
+        // If chat already exists, make it active
+        setActiveChat(chats[existingChatIndex]);
+      } else {
+        // If it's a new chat, add it to the list and make it active
+        const newChat = location.state.activeChat;
+        setChats(prevChats => [newChat, ...prevChats]);
+        setActiveChat(newChat);
+      }
+    }
+  }, [location.state, chats]);
 
   const handleChatSelect = (chat) => {
+    // Check if the chat is already in our list, if not, add it
+    const existingChatIndex = chats.findIndex(c => c.id === chat.id);
+    
+    if (existingChatIndex < 0) {
+      setChats(prevChats => [chat, ...prevChats]);
+    }
+    
     setActiveChat(chat);
     setIsChatListVisible(false); // Hide chat list on smaller screens
+  };
+
+  const handleSendMessage = (chatId, message) => {
+    // Update the chat with the new message
+    setChats(prevChats => 
+      prevChats.map(chat => {
+        if (chat.id === chatId) {
+          return {
+            ...chat,
+            lastMessage: message,
+            timestamp: 'Just now'
+          };
+        }
+        return chat;
+      })
+    );
+    
+    // In a real implementation, you would also send the message to your backend
+    // and potentially use websockets for real-time updates
   };
 
   const handleDragStart = (e) => {
@@ -66,6 +112,11 @@ const MessagesPage = () => {
   const handleDragEnd = () => {
     dragStartRef.current = null; // Reset drag state
   };
+
+  // Filter chats based on search query
+  const filteredChats = chats.filter(chat => 
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="relative flex min-h-screen bg-gradient-to-b from-[#08369a] to-[#000000] text-white overflow-hidden">
@@ -155,26 +206,32 @@ const MessagesPage = () => {
       <div className="flex-1 flex flex-col md:ml-20 overflow-hidden">
         <div className="flex flex-1 overflow-hidden">
           {/* Chat List */}
-          <div className="hidden md:block w-1/3 bg-gray-900/50 backdrop-blur-sm border-r border-gray-800 overflow-y-auto">
+          <div className={`${isChatListVisible ? 'block' : 'hidden'} md:block w-full md:w-1/3 lg:w-1/4 bg-gray-900/50 backdrop-blur-sm border-r border-gray-800 overflow-y-auto`}>
             <div className="p-4 border-b border-gray-800">
-              <h2 className="text-lg font-semibold text-white">Chats</h2>
+              <h2 className="text-lg font-semibold text-white">Messages</h2>
               <input
                 type="text"
                 placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-gray-800/50 text-white placeholder-gray-400 rounded-md px-4 py-2 mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <ChatList
-              chats={mockChats}
+              chats={filteredChats}
               activeChat={activeChat}
               onChatSelect={handleChatSelect}
             />
           </div>
 
           {/* Chat Window */}
-          <div className="flex-1 flex flex-col bg-gray-900/50 backdrop-blur-sm">
+          <div className={`${!isChatListVisible || activeChat ? 'block' : 'hidden'} md:block flex-1 flex flex-col bg-gray-900/50 backdrop-blur-sm`}>
             {activeChat ? (
-              <ChatWindow chat={activeChat} />
+              <ChatWindow 
+                chat={activeChat} 
+                onBackClick={() => setIsChatListVisible(true)}
+                onSendMessage={(message) => handleSendMessage(activeChat.id, message)}
+              />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400">
                 <div className="text-center">

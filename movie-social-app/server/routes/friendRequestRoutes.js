@@ -7,18 +7,50 @@ const router = express.Router();
 // Send a friend request
 router.post('/send', async (req, res) => {
   try {
-    const { senderId, receiverId } = req.body;
+    console.log('Request headers:', req.headers);
+    console.log('Raw request body:', req.body);
+    
+    // If req.body is undefined or null, return 400
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error('Request body is missing or empty');
+      return res.status(400).json({ message: 'Request body is missing or empty' });
+    }
+    
+    // Extract data from request body with default empty values to prevent destructuring errors
+    const senderId = req.body.senderId || '';
+    const receiverId = req.body.receiverId || '';
+    
+    console.log('Extracted sender ID:', senderId);
+    console.log('Extracted receiver ID:', receiverId);
+    
+    // Validate required fields
+    if (!senderId) {
+      return res.status(400).json({ message: 'Sender ID is required' });
+    }
+    
+    if (!receiverId) {
+      return res.status(400).json({ message: 'Receiver ID is required' });
+    }
+    
+    // Check if sender and receiver are the same
+    if (senderId === receiverId) {
+      return res.status(400).json({ message: 'You cannot send a friend request to yourself' });
+    }
     
     // Check if users exist
-    const senderExists = await User.findOne({ clerkId: senderId });
-    const receiverExists = await User.findOne({ clerkId: receiverId });
+    const sender = await User.findOne({ clerkId: senderId });
+    const receiver = await User.findOne({ clerkId: receiverId });
     
-    if (!senderExists || !receiverExists) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!sender) {
+      return res.status(404).json({ message: 'Sender not found', senderId });
+    }
+    
+    if (!receiver) {
+      return res.status(404).json({ message: 'Receiver not found', receiverId });
     }
     
     // Check if they are already friends
-    if (senderExists.friends.includes(receiverId)) {
+    if (sender.friends && sender.friends.includes(receiverId)) {
       return res.status(400).json({ message: 'Users are already friends' });
     }
     
@@ -33,7 +65,7 @@ router.post('/send', async (req, res) => {
     if (existingRequest) {
       return res.status(400).json({ 
         message: 'A friend request already exists between these users',
-        request: existingRequest
+        status: existingRequest.status
       });
     }
     
@@ -44,12 +76,14 @@ router.post('/send', async (req, res) => {
       status: 'pending'
     });
     
+    console.log('Friend request created:', newRequest);
+    
     res.status(201).json({
       message: 'Friend request sent successfully',
       request: newRequest
     });
   } catch (error) {
-    console.error('Error sending friend request:', error);
+    console.error('Error processing friend request:', error);
     res.status(500).json({ message: 'Failed to send friend request', error: error.message });
   }
 });
@@ -210,5 +244,84 @@ router.get('/sent/:userId', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch sent requests', error: error.message });
   }
 });
+
+// Fetch all users
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find({}, { password: 0 }); // Exclude sensitive fields like password
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+  }
+});
+
+// Test endpoint to verify route is working
+router.get('/test', async (req, res) => {
+  console.log('Test endpoint hit');
+  res.status(200).json({ message: 'Friend requests API is working' });
+});
+
+// Get friends of a user
+router.get('/friends/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`Fetching friends for user: ${userId}`);
+    
+    // Find the user by their clerkId
+    const user = await User.findOne({ clerkId: userId });
+    
+    if (!user) {
+      console.log(`User not found with clerkId: ${userId}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    console.log(`Found user: ${user.firstName} ${user.lastName}, friends array:`, user.friends);
+    
+    // Check if the user has friends
+    if (!user.friends || user.friends.length === 0) {
+      console.log('No friends found for this user');
+      return res.status(200).json([]); // Return empty array if no friends
+    }
+    
+    // Fetch full details of all friends
+    const friends = await User.find(
+      { clerkId: { $in: user.friends } },
+      { password: 0 } // Exclude sensitive fields like password
+    );
+    
+    console.log(`Found ${friends.length} friends for user ${userId}:`, 
+      friends.map(f => `${f.firstName} ${f.lastName} (${f.clerkId})`));
+    
+    res.status(200).json(friends);
+  } catch (error) {
+    console.error('Error fetching friends:', error);
+    res.status(500).json({ message: 'Failed to fetch friends', error: error.message });
+  }
+});
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`Fetching user details for: ${userId}`);
+
+    // Find the user by their clerkId
+    const user = await User.findOne({ clerkId: userId }, { password: 0 }); // Exclude sensitive fields like password
+
+    if (!user) {
+      console.log(`User not found with clerkId: ${userId}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log(`Found user: ${user.firstName} ${user.lastName} (${user.clerkId})`);
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(`Error fetching user details for ${req.params.userId}:`, error);
+    res.status(500).json({ message: 'Failed to fetch user details', error: error.message });
+  }
+});
+
+
 
 export default router;

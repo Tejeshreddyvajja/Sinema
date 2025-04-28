@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
+import axios from 'axios';
+import FriendsList from '../components/connections/FriendsList';
 
 const ProfilePage = () => {
   const { user } = useUser();
+  const { userId: profileUserId } = useParams(); // Get userId from URL if viewing another user's profile
   const [activeTab, setActiveTab] = useState('activity');
   const [sinemaProfilePic, setSinemaProfilePic] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [friendsData, setFriendsData] = useState([]);
+  const [friendsLoading, setFriendsLoading] = useState(true);
+  const [profileUser, setProfileUser] = useState(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  
+  // Determine which userId to use - the URL param or the logged-in user
+  const targetUserId = profileUserId || user?.id;
   
   // Sample data - would be fetched from backend in a real implementation
   const stats = {
     moviesWatched: 42,
     reviews: 15,
-    friends: 24,
+    friends: friendsData.length,
     watchlist: 8
   };
 
@@ -67,6 +77,65 @@ const ProfilePage = () => {
       reader.readAsDataURL(file);
     }
   };
+
+  // Fetch profile user data if viewing another user's profile
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!targetUserId) return;
+      
+      setIsLoadingProfile(true);
+      
+      try {
+        // Only fetch user data if viewing someone else's profile
+        if (profileUserId && profileUserId !== user?.id) {
+          const response = await axios.get(`/api/friend-requests/user/${targetUserId}`);
+          setProfileUser(response.data);
+        } else {
+          // Use the logged-in user's data
+          setProfileUser(null);
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+    
+    fetchProfileData();
+  }, [targetUserId, profileUserId, user?.id]);
+
+  // Function to fetch friends - extracted for reuse
+  const fetchFriends = async () => {
+    if (!targetUserId) return;
+    
+    setFriendsLoading(true);
+    
+    try {
+      console.log(`Attempting to fetch friends for user: ${targetUserId}`);
+      // Using the API endpoint that matches the backend route
+      const response = await axios.get(`/api/friend-requests/friends/${targetUserId}`);
+      console.log('Friends data response:', response.data);
+      setFriendsData(response.data);
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data
+      });
+      setFriendsData([]);
+    } finally {
+      setFriendsLoading(false);
+    }
+  };
+
+  // Fetch friends when user is available
+  useEffect(() => {
+    if (targetUserId) {
+      fetchFriends();
+    }
+  }, [targetUserId]);
 
   if (!user) {
     return (
@@ -492,33 +561,9 @@ const ProfilePage = () => {
                 Find Friends
               </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {friends.map((friend) => (
-                <div key={friend.id} className="bg-gray-700/50 rounded-lg p-3 flex items-center space-x-3 hover:bg-gray-700 transition-colors">
-                  <img
-                    src={friend.avatarUrl}
-                    alt={friend.name}
-                    className="h-12 w-12 rounded-full bg-gray-700 ring-1 ring-gray-700/50"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-white truncate">{friend.name}</h4>
-                    <p className="text-xs text-gray-400 truncate">@{friend.username}</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button className="p-1.5 text-gray-400 hover:text-blue-400 transition-all rounded-md">
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                    </button>
-                    <button className="p-1.5 text-gray-400 hover:text-blue-400 transition-all rounded-md">
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            
+            {/* Use the FriendsList component with real data */}
+            <FriendsList friends={friendsData} loading={friendsLoading} />
           </div>
         )}
         {/* Communities List */}
